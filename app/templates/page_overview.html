@@ -1,0 +1,133 @@
+{% set t = totals %}
+{% set n = node %}
+
+{# ── resource summary row ── #}
+<div class="grid col-3" style="margin-bottom:1rem">
+
+  <div class="card">
+    <div class="card-title">Node CPU &nbsp;<span style="font-weight:400;color:#6b7280">{{ n.cores }} physical cores</span></div>
+
+    {# stacked bar: vm load | host overhead | idle #}
+    {% set vm_w  = [t.vm_cpu_pct,  100]|min %}
+    {% set sys_w = [t.sys_cpu_pct, 100 - vm_w]|min %}
+    <div style="display:flex;height:10px;border-radius:5px;background:#f3f4f6;overflow:hidden;margin:0.75rem 0 0.6rem 0">
+      <div style="width:{{ vm_w }}%;background:#22c55e;"></div>
+      <div style="width:{{ sys_w }}%;background:#86efac;"></div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:0.2rem">
+      <span style="color:#16a34a;font-weight:500">▮ VM load</span>
+      <span style="color:#4b5563">{{ t.vm_cpu_pct }}% &nbsp;<span style="color:#6b7280">across all guests</span></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:0.3rem">
+      <span style="color:#86efac;font-weight:500">▮ Host overhead</span>
+      <span style="color:#4b5563">{{ t.sys_cpu_pct }}% &nbsp;<span style="color:#6b7280">Proxmox / kernel</span></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:0.3rem">
+      <span style="color:#9ca3af;font-weight:500">▮ Idle</span>
+      <span style="color:#4b5563">{{ t.cpu_idle_pct }}% &nbsp;<span style="color:#6b7280">available</span></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Memory &nbsp;<span style="font-weight:400;color:#6b7280">{{ n.mem_total_gb }} GB physical</span></div>
+
+    {# stacked bar: pressure | overhead | unallocated #}
+    {% set pressure_pct = t.ram_used_pct %}
+    {% set overhead_pct = (t.ram_overhead_gb / n.mem_total_gb * 100)|round(1) %}
+    <div style="display:flex;height:10px;border-radius:5px;background:#f3f4f6;overflow:hidden;margin:0.75rem 0 0.6rem 0">
+      <div style="width:{{ pressure_pct }}%;background:#22c55e;"></div>
+      <div style="width:{{ overhead_pct }}%;background:#86efac;"></div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:0.2rem">
+      <span style="color:#16a34a;font-weight:500">▮ VM pressure</span>
+      <span style="color:#4b5563">{{ t.used_ram_gb }} GB &nbsp;<span style="color:#6b7280">guest working set</span></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:0.3rem">
+      <span style="color:#86efac;font-weight:500">▮ QEMU overhead</span>
+      <span style="color:#4b5563">{{ t.ram_overhead_gb }} GB &nbsp;<span style="color:#6b7280">allocated but idle</span></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:0.3rem">
+      <span style="color:#9ca3af;font-weight:500">▮ Unallocated</span>
+      <span style="color:#4b5563">{{ t.ram_free_gb }} GB &nbsp;<span style="color:#6b7280">free for new VMs</span></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Services</div>
+    <div class="stat-val {{ 'overprov' if t.services_down > 0 else 'ok' }}">{{ t.services_up }}<span style="font-size:1rem;font-weight:500;color:#6b7280"> / {{ t.services_total }}</span></div>
+    <div class="stat-sub">{{ 'all up' if t.services_down == 0 else t.services_down|string + ' down' }}</div>
+    <div class="stat-bar">
+      <div class="bar-bg"><div class="bar-fill {{ 'bar-red' if t.services_down > 0 else 'bar-green' }}" style="width:{{ ((t.services_up / t.services_total) * 100)|round|int if t.services_total else 100 }}%"></div></div>
+    </div>
+  </div>
+
+
+</div>
+
+{# ── vm card grid ── #}
+<div style="margin-bottom:0.5rem;font-size:0.75rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">
+  Virtual Machines — {{ t.running }} running{% if t.stopped %} &nbsp;<span style="color:#ef4444">{{ t.stopped }} stopped</span>{% endif %}
+</div>
+<div class="grid col-3">
+  {% for vm in vms %}
+  {% set cfg = vm_configs.get(vm.vmid, {}) %}
+  {% set p   = vm_pressure.get(vm.vmid, {}) %}
+  {% set alloc = cfg.get('mem_gb', None) %}
+  {% set running = vm.status == 'running' %}
+  <div class="card" style="padding:0.85rem">
+    <div class="vm-hdr">
+      <div>
+        <div class="vm-name">
+          <span class="dot {{ 'dot-green' if running else 'dot-red' }}"></span>
+          {{ vm.name }}
+        </div>
+        <div class="vm-meta">VMID {{ vm.vmid }}{% if cfg.get('cores') %} &nbsp;·&nbsp; {{ cfg.cores }} cores{% endif %}{% if cfg.get('vmbr') %} &nbsp;·&nbsp; {{ cfg.vmbr }}{% endif %}</div>
+      </div>
+      <span class="vm-uptime">{{ vm.uptime }}</span>
+    </div>
+
+    {% if running %}
+    {# CPU bar #}
+    <div class="vm-bar-row">
+      <span class="vm-bar-lbl">CPU</span>
+      <div class="vm-bar-bg" {% if vm.cpu_peak_pct is defined and vm.cpu_peak_pct > vm.cpu_pct %}title="24h peak: {{ vm.cpu_peak_pct }}%"{% endif %}>
+        <div class="bar-fill {{ vm.cpu_class }}" style="width:{{ [vm.cpu_pct,100]|min }}%;height:100%;border-radius:4px;"></div>
+        {% if vm.cpu_peak_pct is defined and vm.cpu_peak_pct > vm.cpu_pct %}<div class="peak-mark" style="left:{{ [vm.cpu_peak_pct,100]|min }}%"></div>{% endif %}
+      </div>
+      <span class="vm-bar-val">{{ vm.cpu_pct }}%</span>
+    </div>
+
+    {# RAM bar #}
+    <div class="vm-bar-row">
+      <span class="vm-bar-lbl">RAM</span>
+      {% if p %}
+      <div class="vm-bar-bg" {% if p.peak_pct is defined and p.peak_pct > p.pct %}title="24h peak: {{ p.peak_gb }}GB"{% endif %}>
+        <div class="bar-fill {{ p.bar_class }}" style="width:{{ p.pct }}%;height:100%;border-radius:4px;"></div>
+        {% if p.peak_pct is defined and p.peak_pct > p.pct %}<div class="peak-mark" style="left:{{ p.peak_pct }}%"></div>{% endif %}
+      </div>
+      <span class="vm-bar-val">{{ p.used_gb }}GB{% if alloc %} / {{ alloc }}GB{% endif %}</span>
+      {% else %}
+      <div class="vm-bar-bg"></div>
+      <span class="vm-bar-val" style="color:#9ca3af">{% if alloc %}{{ alloc }}GB{% else %}—{% endif %}</span>
+      {% endif %}
+    </div>
+    {% else %}
+    <div style="margin-top:0.6rem;font-size:0.75rem;color:#6b7280">Stopped</div>
+    {% endif %}
+
+    {# network bandwidth #}
+    <div style="margin-top:0.55rem;padding-top:0.45rem;border-top:1px solid #f3f4f6;font-size:0.72rem;color:#6b7280">
+      <div style="display:flex;justify-content:space-between;margin-bottom:0.15rem">
+        <span>Today</span>
+        <span>↓ {{ vm.net_day_in }} &nbsp; ↑ {{ vm.net_day_out }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span>Month</span>
+        <span>↓ {{ vm.net_mon_in }} &nbsp; ↑ {{ vm.net_mon_out }}</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>

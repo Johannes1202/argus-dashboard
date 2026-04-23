@@ -1,0 +1,79 @@
+<div class="card">
+  <div class="card-title">Virtual Machines</div>
+  {% if vms %}
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Cores</th>
+        <th>RAM (alloc)</th>
+        <th>RAM (pressure)</th>
+        <th>CPU</th>
+        <th>Primary Disk</th>
+        <th>Extra Disks</th>
+        <th>Passthrough</th>
+        <th>Uptime</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vm in vms %}
+      {% set cfg = vm_configs.get(vm.vmid, {}) %}
+      {% set disks = cfg.get('disks', []) %}
+      {% set pt = cfg.get('passthrough', []) %}
+      <tr>
+        <td style="width:18px"><span class="dot {{ 'dot-green' if vm.status == 'running' else 'dot-red' }}"></span></td>
+        <td style="font-weight:500">{{ vm.name }}</td>
+        <td style="color:#6b7280">{{ vm.vmid }}</td>
+        <td>{{ cfg.get('cores', '—') }}</td>
+        <td style="color:#4b5563">{{ cfg.get('mem_gb', '—') }} GB</td>
+        <td>
+          {% set p = vm_pressure.get(vm.vmid, {}) %}
+          {% if p %}
+          <div class="mini-wrap">
+            <div class="mini-bg" {% if p.peak_pct is defined and p.peak_pct > p.pct %}title="24h peak: {{ p.peak_gb }}GB"{% endif %}>
+              <div class="mini-fill {{ p.bar_class }}" style="width:{{ p.pct }}%"></div>
+              {% if p.peak_pct is defined and p.peak_pct > p.pct %}<div class="peak-mark" style="left:{{ p.peak_pct }}%"></div>{% endif %}
+            </div>
+            <span class="mini-label" title="{{ p.pct }}% of allocation">{{ p.used_gb }}GB</span>
+          </div>
+          {% else %}<span style="color:#4b5563">—</span>{% endif %}
+        </td>
+        <td>
+          <div class="mini-wrap">
+            <div class="mini-bg" {% if vm.cpu_peak_pct is defined and vm.cpu_peak_pct > vm.cpu_pct %}title="24h peak: {{ vm.cpu_peak_pct }}%"{% endif %}>
+              <div class="mini-fill {{ vm.cpu_class }}" style="width:{{ [vm.cpu_pct,100]|min }}%"></div>
+              {% if vm.cpu_peak_pct is defined and vm.cpu_peak_pct > vm.cpu_pct %}<div class="peak-mark" style="left:{{ [vm.cpu_peak_pct,100]|min }}%"></div>{% endif %}
+            </div>
+            <span class="mini-label">{{ vm.cpu_pct }}%</span>
+          </div>
+        </td>
+        <td>
+          {% if disks %}
+            <span class="badge">{{ disks[0].pool }}</span>
+            <span style="font-size:0.75rem;color:#4b5563">{{ disks[0].size }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td style="font-size:0.75rem;color:#4b5563">
+          {% if disks|length > 1 %}
+            {% for d in disks[1:] %}<span class="badge">{{ d.pool }}</span> {{ d.size }}{% if not loop.last %}<br>{% endif %}{% endfor %}
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if pt %}
+            {% for p in pt %}
+              <span class="badge {{ 'badge-gpu' if p.is_gpu else 'badge-pci' }}"
+                    title="{{ p.pci_id }}">{{ 'GPU' if p.is_gpu else 'PCI' }} · {{ p.name }}</span>
+            {% endfor %}
+          {% else %}—{% endif %}
+        </td>
+        <td style="color:#4b5563">{{ vm.uptime }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No data</p>
+  {% endif %}
+</div>

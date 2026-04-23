@@ -1,0 +1,11 @@
+services:
+  argus-dashboard:
+    build: .
+    container_name: argus-dashboard
+    restart: unless-stopped
+    ports:
+      - "8890:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data

@@ -1,0 +1,129 @@
+<script>
+function addRow(tbodyId, cells) {
+  const tbody = document.getElementById(tbodyId);
+  const tr = document.createElement('tr');
+  tr.innerHTML = cells + `<td><button class="del-btn" onclick="this.closest('tr').remove()">×</button></td>`;
+  tbody.appendChild(tr);
+  tr.querySelector('input').focus();
+}
+
+function addService() {
+  addRow('svc-body',
+    `<td><input class="cfg-input" placeholder="Name"></td>
+     <td><input class="cfg-input" placeholder="http://192.168.0.x:port"></td>
+     <td><input class="cfg-input" placeholder="https://example.com (optional)"></td>`
+  );
+}
+
+function addDevice() {
+  addRow('dev-body',
+    `<td><input class="cfg-input" placeholder="tailscale-hostname"></td>
+     <td><input class="cfg-input" placeholder="192.168.0.x"></td>`
+  );
+}
+
+async function saveServices() {
+  const rows = document.querySelectorAll('#svc-body tr');
+  const services = [...rows].map(tr => {
+    const [name, local, pub] = [...tr.querySelectorAll('input')].map(i => i.value.trim());
+    return { name, local: local || null, public: pub || null };
+  }).filter(s => s.name);
+
+  await _post('/api/config/services', services, 'svc-msg');
+}
+
+async function saveDevices() {
+  const rows = document.querySelectorAll('#dev-body tr');
+  const devices = {};
+  for (const tr of rows) {
+    const [name, ip] = [...tr.querySelectorAll('input')].map(i => i.value.trim());
+    if (name && ip) devices[name.toLowerCase()] = ip;
+  }
+  await _post('/api/config/devices', devices, 'dev-msg');
+}
+
+async function _post(url, body, msgId) {
+  const el = document.getElementById(msgId);
+  el.textContent = 'Saving…';
+  el.className = 'cfg-msg';
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    el.textContent = r.ok ? 'Saved.' : 'Error saving.';
+    el.className = r.ok ? 'cfg-msg cfg-ok' : 'cfg-msg cfg-err';
+  } catch {
+    el.textContent = 'Error saving.';
+    el.className = 'cfg-msg cfg-err';
+  }
+  setTimeout(() => { el.textContent = ''; el.className = 'cfg-msg'; }, 2500);
+}
+</script>
+
+{# ── Services ── #}
+<div class="card" style="margin-bottom:1rem">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div class="card-title" style="margin-bottom:0">Services</div>
+    <button class="add-btn" onclick="addService()">+ Add</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Local URL <span style="font-weight:400;text-transform:none;letter-spacing:0">(health check)</span></th>
+        <th>Public URL <span style="font-weight:400;text-transform:none;letter-spacing:0">(display only)</span></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="svc-body">
+      {% for svc in services_cfg %}
+      <tr>
+        <td><input class="cfg-input" value="{{ svc.name }}"></td>
+        <td><input class="cfg-input" value="{{ svc.local or '' }}"></td>
+        <td><input class="cfg-input" value="{{ svc.public or '' }}"></td>
+        <td><button class="del-btn" onclick="this.closest('tr').remove()">×</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem">
+    <button class="save-btn" onclick="saveServices()">Save</button>
+    <span id="svc-msg" class="cfg-msg"></span>
+  </div>
+</div>
+
+{# ── Device LAN IPs ── #}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+    <div class="card-title" style="margin-bottom:0">Device LAN IPs</div>
+    <button class="add-btn" onclick="addDevice()">+ Add</button>
+  </div>
+  <p style="font-size:0.75rem;color:#6b7280;margin-bottom:1rem">
+    VMs are discovered automatically via guest agent.
+    Add non-VM Tailscale devices (bare metal servers, PCs) here.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Tailscale hostname</th>
+        <th>LAN IP</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="dev-body">
+      {% for name, ip in device_lan_map.items() %}
+      <tr>
+        <td><input class="cfg-input" value="{{ name }}"></td>
+        <td><input class="cfg-input" value="{{ ip }}"></td>
+        <td><button class="del-btn" onclick="this.closest('tr').remove()">×</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem">
+    <button class="save-btn" onclick="saveDevices()">Save</button>
+    <span id="dev-msg" class="cfg-msg"></span>
+  </div>
+</div>

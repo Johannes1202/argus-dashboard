@@ -1,0 +1,181 @@
+<div class="grid">
+
+  {# ── Virtual Machines ── #}
+  <div class="card">
+    <div class="card-title">Virtual Machines</div>
+    {% if vms %}
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>ID</th>
+          <th>CPU</th>
+          <th>Memory</th>
+          <th>Uptime</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for vm in vms %}
+        <tr>
+          <td style="width:20px">
+            <span class="dot {{ 'dot-green' if vm.status == 'running' else 'dot-red' }}"></span>
+          </td>
+          <td style="font-weight:500">{{ vm.name }}</td>
+          <td style="color:#6b7280">{{ vm.vmid }}</td>
+          <td>
+            <div class="mini-bar-wrap">
+              <div class="mini-bar-bg">
+                <div class="mini-bar-fill {{ vm.cpu_class }}" style="width:{{ [vm.cpu_pct, 100]|min }}%"></div>
+              </div>
+              <span class="mini-label">{{ vm.cpu_pct }}%</span>
+            </div>
+          </td>
+          <td>
+            <div class="mini-bar-wrap">
+              <div class="mini-bar-bg">
+                <div class="mini-bar-fill {{ vm.mem_class }}" style="width:{{ vm.mem_pct }}%"></div>
+              </div>
+              <span class="mini-label" title="{{ vm.mem_used_gb }} / {{ vm.mem_total_gb }} GB">{{ vm.mem_pct }}%</span>
+            </div>
+          </td>
+          <td style="color:#4b5563">{{ vm.uptime }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#6b7280;font-size:0.8rem">No data</p>
+    {% endif %}
+  </div>
+
+  {# ── Storage ── #}
+  <div class="card">
+    <div class="card-title">Storage</div>
+    {% if storage %}
+      {% for s in storage %}
+      <div class="bar-row">
+        <div class="bar-label">
+          <span class="bar-name">{{ s.name }} <span style="color:#6b7280;font-weight:400;font-size:0.7rem">{{ s.type }}</span></span>
+          <span class="bar-detail">{{ s.used_gb }} GB / {{ s.total_gb }} GB &nbsp; {{ s.pct }}%</span>
+        </div>
+        <div class="bar-bg">
+          <div class="bar-fill {{ s.bar_class }}" style="width:{{ s.pct }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <p style="color:#6b7280;font-size:0.8rem">No data</p>
+    {% endif %}
+  </div>
+
+  {# ── Backups + Tailscale side by side ── #}
+  <div class="two-col">
+
+    <div class="card">
+      <div class="card-title">Backups (PBS)</div>
+      {% if backups %}
+      <table>
+        <thead>
+          <tr>
+            <th>VM</th>
+            <th>Last Backup</th>
+            <th>Age</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in backups %}
+          <tr>
+            <td style="font-weight:500">{{ b.name }}</td>
+            <td style="color:#4b5563">{{ b.last_backup }}</td>
+            <td>
+              <span class="chip {{ b.chip_class }}">{{ b.age_label }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:#6b7280;font-size:0.8rem">No data</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Tailscale</div>
+      {% if tailscale %}
+      <div class="chips">
+        {% for d in tailscale %}
+        <span class="chip {{ 'chip-green' if d.online else 'chip-red' }}" title="{{ d.ip }}">
+          <span class="dot {{ 'dot-green' if d.online else 'dot-red' }}"></span>
+          {{ d.name }}
+        </span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="color:#6b7280;font-size:0.8rem">No data</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+  {# ── Services + Pi-hole side by side ── #}
+  <div class="two-col">
+
+    <div class="card">
+      <div class="card-title">Services</div>
+      {% if services %}
+      <div class="chips">
+        {% for svc in services %}
+        <span class="chip {{ 'chip-green' if svc.up else 'chip-red' }}" title="{{ svc.url }}">
+          <span class="dot {{ 'dot-green' if svc.up else 'dot-red' }}"></span>
+          {{ svc.name }}
+        </span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="color:#6b7280;font-size:0.8rem">No data</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Pi-hole</div>
+      {% if pihole %}
+        {% for ph in pihole %}
+        <div style="{% if not loop.first %}margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #f3f4f6;{% endif %}">
+          <div style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#4b5563;margin-bottom:0.6rem">{{ ph.name }}</div>
+          {% if ph.available %}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+            <div>
+              <div style="font-size:1.25rem;font-weight:700;letter-spacing:-0.03em">{{ "{:,}".format(ph.total) }}</div>
+              <div style="font-size:0.65rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-top:0.1rem">Queries today</div>
+            </div>
+            <div>
+              <div style="font-size:1.25rem;font-weight:700;letter-spacing:-0.03em;color:#ef4444">{{ "{:,}".format(ph.blocked) }}</div>
+              <div style="font-size:0.65rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-top:0.1rem">Blocked today</div>
+            </div>
+          </div>
+          <div class="bar-label" style="margin-bottom:0.3rem">
+            <span style="font-size:0.7rem;color:#4b5563">Block rate</span>
+            <span style="font-size:0.7rem;color:#4b5563">{{ ph.pct }}%</span>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill bar-red" style="width:{{ ph.pct }}%"></div>
+          </div>
+          {% else %}
+          <span class="chip chip-red"><span class="dot dot-red"></span>Unavailable</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+      <p style="color:#6b7280;font-size:0.8rem">No data</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+  {# ── last updated ── #}
+  {% if last_updated %}
+  <p class="last-updated">Updated {{ last_updated }}</p>
+  {% endif %}
+
+</div>

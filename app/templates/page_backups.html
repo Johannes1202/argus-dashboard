@@ -1,0 +1,31 @@
+<div class="card">
+  <div class="card-title">PBS Backups — last backup per VM</div>
+  {% if backups %}
+  <table>
+    <thead>
+      <tr>
+        <th>VM</th>
+        <th>ID</th>
+        <th>Last Backup</th>
+        <th>Age</th>
+        <th>Size</th>
+        <th>This week</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in backups %}
+      <tr>
+        <td style="font-weight:500">{{ b.name }}</td>
+        <td style="color:#6b7280">{{ b.vmid }}</td>
+        <td style="color:#4b5563">{{ b.last_backup }}</td>
+        <td><span class="chip {{ b.chip_class }}">{{ b.age_label }}</span></td>
+        <td style="color:#4b5563">{{ b.size }}</td>
+        <td><span class="chip {% if b.count_7d >= 7 %}chip-green{% elif b.count_7d >= 3 %}chip-amber{% else %}chip-red{% endif %}">{{ b.count_7d }}x</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No data</p>
+  {% endif %}
+</div>
