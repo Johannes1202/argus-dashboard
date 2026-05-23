@@ -1,0 +1,22 @@
+# Argus Dashboard — instance configuration
+# Copy this file to config.yml and fill in your own values.
+# Mount it into the container at /app/config.yml (read-only).
+# Secrets live in .env — not here.
+
+# Non-VM devices that need a manual LAN IP.
+# VMs are discovered automatically via the QEMU guest agent.
+# Use the same hostname (lowercase) that appears in your Tailscale device list.
+device_lan_map:
+  proxmox: 192.168.1.10
+  pbs:     192.168.1.11
+  # mainpc: 192.168.1.50   # any non-VM device you want to map
+
+# Services to monitor. 'public' is optional — omit or leave it out if not exposed.
+services:
+  - name: My App
+    local: http://192.168.1.100:8080
+    public: https://myapp.example.com
+
+  - name: Another Service
+    local: http://192.168.1.101:3000
+    # no public URL — local only
