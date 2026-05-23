@@ -1,0 +1,67 @@
+<script>
+function copyIp(el, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = el.textContent;
+    el.textContent = 'copied!';
+    el.style.color = '#065f46';
+    el.style.background = '#d1fae5';
+    setTimeout(() => { el.textContent = orig; el.style.color = ''; el.style.background = ''; }, 1200);
+  });
+}
+</script>
+
+<div class="card">
+  <div class="card-title">
+    Tailscale &mdash;
+    {% set online = tailscale|selectattr('online')|list|length %}
+    <span class="{{ 'ok' if online == tailscale|length else 'overprov' }}" style="font-weight:700;font-size:0.75rem;letter-spacing:normal;text-transform:none">
+      {{ online }} / {{ tailscale|length }} online
+    </span>
+  </div>
+  {% if tailscale %}
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Device</th>
+        <th>OS</th>
+        <th>LAN IP</th>
+        <th>Tailscale IP</th>
+        <th>Last seen</th>
+        <th>Key expiry</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in tailscale %}
+      <tr>
+        <td style="width:18px"><span class="dot {{ 'dot-green' if d.online else 'dot-red' }}"></span></td>
+        <td style="font-weight:500">{{ d.name }}</td>
+        <td style="color:var(--text-muted);font-size:0.75rem">{{ d.os or '—' }}</td>
+        <td>
+          {% if d.lan_ip %}
+          <span class="copy-ip" onclick="copyIp(this, '{{ d.lan_ip }}')" title="Click to copy">{{ d.lan_ip }}</span>
+          {% else %}<span style="color:var(--text-light)">—</span>{% endif %}
+        </td>
+        <td>
+          {% if d.ts_ip %}
+          <span class="copy-ip" onclick="copyIp(this, '{{ d.ts_ip }}')" title="Click to copy">{{ d.ts_ip }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td style="color:var(--text-3);font-size:0.75rem">{{ d.last_seen }}</td>
+        <td>
+          {% if d.key_expiry_disabled %}
+            <span class="chip chip-grey">no expiry</span>
+          {% elif d.key_expires_days is not none %}
+            <span class="chip {% if d.key_expires_days > 30 %}chip-green{% elif d.key_expires_days > 7 %}chip-amber{% else %}chip-red{% endif %}">
+              {% if d.key_expires_days <= 0 %}expired{% else %}{{ d.key_expires_days }}d{% endif %}
+            </span>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No Tailscale data — add your API key in Settings.</p>
+  {% endif %}
+</div>

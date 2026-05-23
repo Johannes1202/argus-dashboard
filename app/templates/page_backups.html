@@ -1,10 +1,45 @@
+{% set all_guests = vms + lxc %}
+{% set backed_vmids = backups | map(attribute='vmid') | map('string') | list %}
+{% set uncovered = all_guests | selectattr('vmid', 'string') | list %}
+
+{# ── Coverage warning ── #}
+{% set uncovered_guests = [] %}
+{% for g in all_guests %}
+  {% if g.vmid|string not in backed_vmids %}
+    {% set _ = uncovered_guests.append(g) %}
+  {% endif %}
+{% endfor %}
+
+{% if uncovered_guests %}
+<div class="card" style="margin-bottom:1rem;border-left:3px solid #ef4444">
+  <div class="card-title" style="color:#ef4444">No Backup Coverage</div>
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+    {% for g in uncovered_guests %}
+    <span class="chip chip-red">
+      <span class="dot dot-red"></span>
+      {{ g.name }}
+      <span style="opacity:0.7;font-size:0.65rem">({{ g.type|upper }} {{ g.vmid }})</span>
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Backup table ── #}
 <div class="card">
-  <div class="card-title">PBS Backups — last backup per VM</div>
+  <div class="card-title">
+    PBS Backups &mdash; last backup per guest
+    {% if uncovered_guests %}
+    <span style="color:#ef4444;font-weight:600;margin-left:0.5rem">{{ uncovered_guests|length }} uncovered</span>
+    {% else %}
+    <span style="color:#22c55e;font-weight:600;margin-left:0.5rem">all covered</span>
+    {% endif %}
+  </div>
   {% if backups %}
   <table>
     <thead>
       <tr>
-        <th>VM</th>
+        <th>Guest</th>
         <th>ID</th>
         <th>Last Backup</th>
         <th>Age</th>
@@ -16,16 +51,16 @@
       {% for b in backups %}
       <tr>
         <td style="font-weight:500">{{ b.name }}</td>
-        <td style="color:#6b7280">{{ b.vmid }}</td>
-        <td style="color:#4b5563">{{ b.last_backup }}</td>
+        <td style="color:var(--text-muted)">{{ b.vmid }}</td>
+        <td style="color:var(--text-3)">{{ b.last_backup }}</td>
         <td><span class="chip {{ b.chip_class }}">{{ b.age_label }}</span></td>
-        <td style="color:#4b5563">{{ b.size }}</td>
-        <td><span class="chip {% if b.count_7d >= 7 %}chip-green{% elif b.count_7d >= 3 %}chip-amber{% else %}chip-red{% endif %}">{{ b.count_7d }}x</span></td>
+        <td style="color:var(--text-3)">{{ b.size }}</td>
+        <td><span class="chip {% if b.count_7d >= 7 %}chip-green{% elif b.count_7d >= 3 %}chip-amber{% else %}chip-red{% endif %}">{{ b.count_7d }}×</span></td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
   {% else %}
-  <p class="empty">No data</p>
+  <p class="empty">No backup data — check PBS storage name in Settings.</p>
   {% endif %}
 </div>

@@ -1,0 +1,75 @@
+<div class="grid col-2" style="align-items:start">
+  {% for ph in pihole %}
+  <div style="display:flex;flex-direction:column;gap:1rem">
+
+    {# ── Stats card ── #}
+    <div class="card">
+      <div class="card-title">{{ ph.name }}</div>
+      {% if ph.available %}
+
+      <div class="grid col-2" style="gap:0.875rem;margin-bottom:1.25rem">
+        <div style="background:var(--card-inner);border-radius:8px;padding:0.875rem">
+          <div style="font-size:1.4rem;font-weight:700;letter-spacing:-0.03em;color:var(--text)">{{ "{:,}".format(ph.total) }}</div>
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.2rem">Total queries</div>
+        </div>
+        <div style="background:#fef2f2;border-radius:8px;padding:0.875rem">
+          <div style="font-size:1.4rem;font-weight:700;letter-spacing:-0.03em;color:#dc2626">{{ "{:,}".format(ph.blocked) }}</div>
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.2rem">Blocked</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:8px;padding:0.875rem">
+          <div style="font-size:1.4rem;font-weight:700;letter-spacing:-0.03em;color:#16a34a">{{ ph.pct }}%</div>
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.2rem">Block rate</div>
+        </div>
+        <div style="background:#eff6ff;border-radius:8px;padding:0.875rem">
+          <div style="font-size:1.4rem;font-weight:700;letter-spacing:-0.03em;color:#2563eb">{{ "{:,}".format(ph.domains_blocked) }}</div>
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.2rem">Blocklist domains</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:1.5rem;font-size:0.75rem;color:var(--text-3)">
+        <span>Cached: <strong style="color:var(--text)">{{ "{:,}".format(ph.cached) }}</strong></span>
+        <span>Active clients: <strong style="color:var(--text)">{{ ph.clients }}</strong></span>
+      </div>
+
+      {% else %}
+      <span class="chip chip-red"><span class="dot dot-red"></span>Unavailable — check URL and password in Settings</span>
+      {% endif %}
+    </div>
+
+    {# ── Top blocked domains ── #}
+    {% if ph.available and ph.top_blocked %}
+    <div class="card">
+      <div class="card-title">Top 10 Blocked Domains &mdash; {{ ph.name }}</div>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Domain</th><th>Blocked</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% set max_count = ph.top_blocked[0].count if ph.top_blocked else 1 %}
+          {% for entry in ph.top_blocked %}
+          <tr>
+            <td style="color:var(--text-muted);font-size:0.75rem;width:24px">{{ loop.index }}</td>
+            <td style="font-family:monospace;font-size:0.78rem">{{ entry.domain }}</td>
+            <td style="color:var(--text-3);font-size:0.75rem;white-space:nowrap">{{ "{:,}".format(entry.count) }}</td>
+            <td style="width:120px">
+              <div class="mini-bg" style="width:120px">
+                <div class="mini-fill bar-red" style="width:{{ ((entry.count / max_count) * 100)|round|int }}%"></div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% elif ph.available %}
+    <div class="card">
+      <div class="card-title">Top Blocked Domains</div>
+      <p class="empty">No top-domains data from this Pi-hole instance.</p>
+    </div>
+    {% endif %}
+
+  </div>
+  {% else %}
+  <p class="empty">No DNS data — add Pi-hole instances in Settings.</p>
+  {% endfor %}
+</div>

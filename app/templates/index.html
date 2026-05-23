@@ -3,31 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Argus</title>
+  <title>{{ title }}</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
   <style>
+    /* ── colour tokens ── */
+    :root {
+      --bg:           #f0f2f5;
+      --card:         #ffffff;
+      --card-inner:   #f9fafb;
+      --border:       #e5e7eb;
+      --divider:      #f3f4f6;
+      --text:         #1a1a1a;
+      --text-2:       #374151;
+      --text-3:       #4b5563;
+      --text-muted:   #6b7280;
+      --text-light:   #9ca3af;
+      --header-bg:    #ffffff;
+      --bar-bg:       #f3f4f6;
+      --input-bg:     #ffffff;
+      --input-border: #e5e7eb;
+      --tab-hover:    #f3f4f6;
+      --tab-active-bg:#111111;
+      --tab-active:   #ffffff;
+      --logo:         #111111;
+      --shadow:       0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.04);
+    }
+    html.dark {
+      --bg:           #0f1117;
+      --card:         #1a1d27;
+      --card-inner:   #1f2235;
+      --border:       #2a2d3e;
+      --divider:      #232636;
+      --text:         #e5e7eb;
+      --text-2:       #d1d5db;
+      --text-3:       #9ca3af;
+      --text-muted:   #6b7280;
+      --text-light:   #4b5563;
+      --header-bg:    #1a1d27;
+      --bar-bg:       #2a2d3e;
+      --input-bg:     #232636;
+      --input-border: #2a2d3e;
+      --tab-hover:    #232636;
+      --tab-active-bg:#e5e7eb;
+      --tab-active:   #0f1117;
+      --logo:         #e5e7eb;
+      --shadow:       0 1px 3px rgba(0,0,0,0.4);
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f2f5;
-      color: #1a1a1a;
+      background: var(--bg);
+      color: var(--text);
       font-size: 14px;
       line-height: 1.5;
       display: flex;
       flex-direction: column;
     }
 
-    /* ── header / nav ── */
+    /* ── header ── */
     header {
-      background: #fff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 0 1.5rem;
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.25rem;
       height: 48px;
       display: flex;
       align-items: center;
-      gap: 2rem;
+      gap: 1.5rem;
       flex-shrink: 0;
       z-index: 10;
     }
@@ -35,76 +80,101 @@
       font-size: 0.9375rem;
       font-weight: 700;
       letter-spacing: -0.02em;
-      color: #111;
+      color: var(--logo);
+      flex-shrink: 0;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .logo-icon {
+      height: 22px;
+      width: 22px;
+      object-fit: contain;
+      display: block;
       flex-shrink: 0;
     }
-    nav { display: flex; gap: 0.25rem; flex: 1; }
+    html.dark .logo-icon-light { display: none; }
+    .logo-icon-dark { display: none; }
+    html.dark .logo-icon-dark { display: block; }
+    nav { display: flex; gap: 0.2rem; margin-left: auto; overflow-x: auto; }
     .tab {
-      padding: 0.3rem 0.875rem;
+      padding: 0.3rem 0.8rem;
       border-radius: 6px;
-      font-size: 0.8125rem;
+      font-size: 0.8rem;
       font-weight: 500;
-      color: #4b5563;
+      color: var(--text-muted);
       cursor: pointer;
       border: none;
       background: none;
       transition: background 0.1s, color 0.1s;
       white-space: nowrap;
     }
-    .tab:hover  { background: #f3f4f6; color: #111; }
-    .tab.active { background: #111; color: #fff; }
+    .tab:hover  { background: var(--tab-hover); color: var(--text); }
+    .tab.active { background: var(--tab-active-bg); color: var(--tab-active); }
+
+    .header-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
     .updated {
       font-size: 0.7rem;
-      color: #6b7280;
-      flex-shrink: 0;
+      color: var(--text-muted);
       font-variant-numeric: tabular-nums;
     }
+    .icon-btn {
+      font-size: 0.95rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0.25rem 0.4rem;
+      border-radius: 5px;
+      line-height: 1;
+      transition: background 0.1s, color 0.1s;
+    }
+    .icon-btn:hover { background: var(--tab-hover); color: var(--text); }
     .logout-btn {
       font-size: 0.75rem;
       font-weight: 500;
-      color: #6b7280;
+      color: var(--text-muted);
       background: none;
       border: none;
       cursor: pointer;
       padding: 0.25rem 0.5rem;
       border-radius: 5px;
-      flex-shrink: 0;
       text-decoration: none;
+      white-space: nowrap;
     }
-    .logout-btn:hover { background: #f3f4f6; color: #111; }
+    .logout-btn:hover { background: var(--tab-hover); color: var(--text); }
 
     /* ── page content ── */
-    #page-content {
-      flex: 1;
-      overflow: auto;
-      padding: 1.5rem;
-    }
+    #page-content { flex: 1; overflow: auto; padding: 1.25rem; }
 
     /* ── cards ── */
     .card {
-      background: #fff;
+      background: var(--card);
       border-radius: 10px;
       padding: 1.25rem 1.5rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.04);
+      box-shadow: var(--shadow);
     }
     .card-title {
       font-size: 0.625rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-bottom: 1rem;
     }
 
-    /* ── layout helpers ── */
-    .grid      { display: grid; gap: 1rem; }
-    .col-2     { grid-template-columns: 1fr 1fr; }
-    .col-3     { grid-template-columns: 1fr 1fr 1fr; }
-    .col-4     { grid-template-columns: repeat(4, 1fr); }
+    /* ── layout ── */
+    .grid    { display: grid; gap: 1rem; }
+    .col-2   { grid-template-columns: 1fr 1fr; }
+    .col-3   { grid-template-columns: 1fr 1fr 1fr; }
+    .col-4   { grid-template-columns: repeat(4, 1fr); }
+    .col-5   { grid-template-columns: repeat(5, 1fr); }
 
-    /* ── stat cards (overview) ── */
-    .stat-val  { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
-    .stat-sub  { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.3rem; }
+    /* ── stat cards ── */
+    .stat-val  { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--text); }
+    .stat-sub  { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.3rem; }
     .stat-bar  { margin-top: 0.75rem; }
     .overprov  { color: #ef4444; }
     .ok        { color: #22c55e; }
@@ -117,161 +187,258 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #6b7280;
+      color: var(--text-muted);
       padding: 0 0.75rem 0.6rem 0;
       white-space: nowrap;
     }
     td {
       padding: 0.45rem 0.75rem 0.45rem 0;
       font-size: 0.8125rem;
-      border-top: 1px solid #f3f4f6;
+      border-top: 1px solid var(--divider);
       vertical-align: middle;
+      color: var(--text);
     }
     tr:first-child td { border-top: none; }
 
     /* ── status dot ── */
-    .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      display: inline-block;
-      flex-shrink: 0;
-    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
     .dot-green { background: #22c55e; }
     .dot-red   { background: #ef4444; }
     .dot-grey  { background: #d1d5db; }
+    .dot-amber { background: #f59e0b; }
 
     /* ── progress bars ── */
-    .bar-row    { margin-bottom: 1rem; }
+    .bar-row        { margin-bottom: 1rem; }
     .bar-row:last-child { margin-bottom: 0; }
-    .bar-label  { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.3rem; }
-    .bar-name   { font-size: 0.8125rem; font-weight: 500; }
-    .bar-type   { font-size: 0.7rem; color: #6b7280; margin-left: 0.4rem; font-weight: 400; }
-    .bar-detail { font-size: 0.75rem; color: #4b5563; }
-    .bar-bg     { background: #f3f4f6; border-radius: 4px; height: 7px; overflow: hidden; }
-    .bar-fill   { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
-    .bar-green  { background: #22c55e; }
-    .bar-amber  { background: #f59e0b; }
-    .bar-red    { background: #ef4444; }
+    .bar-label      { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.3rem; }
+    .bar-name       { font-size: 0.8125rem; font-weight: 500; color: var(--text); }
+    .bar-type       { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.4rem; font-weight: 400; }
+    .bar-detail     { font-size: 0.75rem; color: var(--text-3); }
+    .bar-bg         { background: var(--bar-bg); border-radius: 4px; height: 7px; overflow: hidden; }
+    .bar-fill       { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .bar-green      { background: #22c55e; }
+    .bar-amber      { background: #f59e0b; }
+    .bar-red        { background: #ef4444; }
 
-    /* ── mini bars (in tables) ── */
+    /* ── mini bars (tables) ── */
     .mini-wrap  { display: flex; align-items: center; gap: 0.5rem; min-width: 80px; }
-    .mini-bg    { flex: 1; background: #f3f4f6; border-radius: 3px; height: 5px; position: relative; }
+    .mini-bg    { flex: 1; background: var(--bar-bg); border-radius: 3px; height: 5px; position: relative; }
     .mini-fill  { height: 100%; border-radius: 3px; }
-    .mini-label { font-size: 0.7rem; color: #4b5563; width: 60px; text-align: right; flex-shrink: 0; }
+    .mini-label { font-size: 0.7rem; color: var(--text-3); width: 60px; text-align: right; flex-shrink: 0; }
     .peak-mark  { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #f97316; border-radius: 1px; cursor: default; }
 
-    /* ── vm cards (overview) ── */
+    /* ── vm/guest cards ── */
     .vm-hdr     { display: flex; justify-content: space-between; align-items: flex-start; }
-    .vm-name    { font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.35rem; }
-    .vm-meta    { font-size: 0.65rem; color: #6b7280; margin-top: 0.2rem; }
-    .vm-uptime  { font-size: 0.7rem; color: #6b7280; white-space: nowrap; margin-left: 0.5rem; padding-top: 0.1rem; }
+    .vm-name    { font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.35rem; color: var(--text); }
+    .vm-meta    { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .vm-uptime  { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; margin-left: 0.5rem; padding-top: 0.1rem; }
     .vm-bar-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.45rem; }
-    .vm-bar-lbl { font-size: 0.6rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; width: 26px; flex-shrink: 0; }
-    .vm-bar-bg  { flex: 1; background: #f3f4f6; border-radius: 4px; height: 7px; position: relative; }
-    .vm-bar-val { font-size: 0.7rem; color: #4b5563; width: 100px; text-align: right; flex-shrink: 0; white-space: nowrap; }
+    .vm-bar-lbl { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; width: 26px; flex-shrink: 0; }
+    .vm-bar-bg  { flex: 1; background: var(--bar-bg); border-radius: 4px; height: 7px; position: relative; }
+    .vm-bar-val { font-size: 0.7rem; color: var(--text-3); width: 100px; text-align: right; flex-shrink: 0; white-space: nowrap; }
 
     /* ── copy-to-clipboard ── */
-    .copy-ip    { font-family: monospace; font-size: 0.8rem; color: #374151; cursor: pointer; padding: 0.1rem 0.35rem; border-radius: 3px; transition: background 0.12s; display: inline-block; }
-    .copy-ip:hover { background: #e5e7eb; }
+    .copy-ip { font-family: monospace; font-size: 0.8rem; color: var(--text-2); cursor: pointer; padding: 0.1rem 0.35rem; border-radius: 3px; transition: background 0.12s; display: inline-block; }
+    .copy-ip:hover  { background: var(--bar-bg); }
     .copy-ip:active { background: #d1fae5; color: #065f46; }
 
     /* ── chips ── */
-    .chips       { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-    .chip {
-      display: inline-flex; align-items: center; gap: 0.3rem;
-      padding: 0.2rem 0.55rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 500;
-      line-height: 1.6;
-      white-space: nowrap;
-    }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .chip  { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.7rem; font-weight: 500; line-height: 1.6; white-space: nowrap; }
     .chip-green  { background: #dcfce7; color: #15803d; }
     .chip-red    { background: #fee2e2; color: #b91c1c; }
     .chip-amber  { background: #fef3c7; color: #92400e; }
-    .chip-grey   { background: #f3f4f6; color: #4b5563; }
+    .chip-grey   { background: var(--bar-bg); color: var(--text-3); }
+    html.dark .chip-green { background: #14532d; color: #86efac; }
+    html.dark .chip-red   { background: #450a0a; color: #fca5a5; }
+    html.dark .chip-amber { background: #451a03; color: #fcd34d; }
 
-    /* ── badge (passthrough, disk info) ── */
-    .badge {
-      display: inline-block;
-      padding: 0.1rem 0.4rem;
-      border-radius: 4px;
-      font-size: 0.65rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      background: #f3f4f6;
-      color: #4b5563;
-      margin: 0.1rem 0.1rem 0.1rem 0;
-    }
-    .badge-gpu   { background: #ede9fe; color: #6d28d9; }
-    .badge-pci   { background: #dbeafe; color: #1d4ed8; }
+    /* ── badges ── */
+    .badge     { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.02em; background: var(--bar-bg); color: var(--text-3); margin: 0.1rem 0.1rem 0.1rem 0; }
+    .badge-gpu { background: #ede9fe; color: #6d28d9; }
+    .badge-pci { background: #dbeafe; color: #1d4ed8; }
+    .badge-vm  { background: #dbeafe; color: #1d4ed8; }
+    .badge-lxc { background: #dcfce7; color: #15803d; }
+    html.dark .badge-gpu { background: #2e1065; color: #c4b5fd; }
+    html.dark .badge-pci { background: #1e3a5f; color: #93c5fd; }
+    html.dark .badge-vm  { background: #1e3a5f; color: #93c5fd; }
+    html.dark .badge-lxc { background: #14532d; color: #86efac; }
 
-    /* ── url links ── */
-    a.link { color: #4b5563; text-decoration: none; font-size: 0.75rem; }
-    a.link:hover { color: #111; text-decoration: underline; }
+    /* ── links ── */
+    a.link { color: var(--text-3); text-decoration: none; font-size: 0.75rem; }
+    a.link:hover { color: var(--text); text-decoration: underline; }
 
     /* ── empty state ── */
-    .empty { color: #6b7280; font-size: 0.8rem; padding: 0.5rem 0; }
+    .empty { color: var(--text-muted); font-size: 0.8rem; padding: 0.5rem 0; }
 
     /* ── divider ── */
-    .section-divider { border: none; border-top: 1px solid #f3f4f6; margin: 1.25rem 0; }
+    .section-divider { border: none; border-top: 1px solid var(--divider); margin: 1.25rem 0; }
 
-    /* ── settings page ── */
+    /* ── settings / config inputs ── */
     .cfg-input {
-      width: 100%; border: 1px solid #e5e7eb; border-radius: 5px;
-      padding: 0.3rem 0.5rem; font-size: 0.8rem; color: #111;
-      background: #fff; outline: none;
+      width: 100%; border: 1px solid var(--input-border); border-radius: 5px;
+      padding: 0.3rem 0.5rem; font-size: 0.8rem; color: var(--text);
+      background: var(--input-bg); outline: none;
     }
-    .cfg-input:focus { border-color: #6b7280; }
-    .del-btn {
-      background: none; border: none; color: #9ca3af; cursor: pointer;
-      font-size: 1rem; padding: 0 0.25rem; line-height: 1;
-    }
+    .cfg-input:focus { border-color: var(--text-muted); }
+    .del-btn  { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 1rem; padding: 0 0.25rem; line-height: 1; }
     .del-btn:hover { color: #ef4444; }
-    .add-btn {
-      font-size: 0.75rem; font-weight: 500; color: #4b5563;
-      background: #f3f4f6; border: none; border-radius: 5px;
-      padding: 0.3rem 0.7rem; cursor: pointer;
-    }
-    .add-btn:hover { background: #e5e7eb; color: #111; }
-    .save-btn {
-      font-size: 0.8rem; font-weight: 600; color: #fff;
-      background: #111; border: none; border-radius: 6px;
-      padding: 0.4rem 1rem; cursor: pointer;
-    }
+    .add-btn  { font-size: 0.75rem; font-weight: 500; color: var(--text-3); background: var(--bar-bg); border: none; border-radius: 5px; padding: 0.3rem 0.7rem; cursor: pointer; }
+    .add-btn:hover  { background: var(--border); color: var(--text); }
+    .save-btn { font-size: 0.8rem; font-weight: 600; color: #fff; background: #111; border: none; border-radius: 6px; padding: 0.4rem 1rem; cursor: pointer; }
     .save-btn:hover { background: #374151; }
-    .cfg-msg  { font-size: 0.75rem; color: #6b7280; }
-    .cfg-ok   { color: #16a34a; }
-    .cfg-err  { color: #ef4444; }
+    html.dark .save-btn { background: var(--tab-active-bg); color: var(--tab-active); }
+    .cfg-msg { font-size: 0.75rem; color: var(--text-muted); }
+    .cfg-ok  { color: #16a34a; }
+    .cfg-err { color: #ef4444; }
+    .cfg-note { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 1rem; }
+    .cfg-set  { font-size: 0.72rem; color: #16a34a; margin-left: 0.4rem; }
+
+    /* ── bottom nav (mobile only) ── */
+    .bnav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 58px;
+      background: var(--header-bg);
+      border-top: 1px solid var(--border);
+      z-index: 20;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    }
+    .bnav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      font-size: 0.6rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.3rem 0;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      transition: color 0.1s;
+    }
+    .bnav-btn .bnav-icon { width: 20px; height: 20px; display: block; }
+    .bnav-btn.active { color: var(--text); }
+    html.dark .bnav { box-shadow: 0 -2px 12px rgba(0,0,0,0.3); }
+
+    /* ── mobile ── */
+    @media (max-width: 768px) {
+      html, body { overflow: auto; }
+
+      nav { display: none; }
+      .updated { display: none; }
+      .bnav { display: flex; }
+
+      #page-content { padding: 0.75rem; padding-bottom: 74px; overflow: visible; }
+      .card { padding: 1rem; overflow-x: auto; }
+
+      .col-3, .col-4, .col-5 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .col-2 { grid-template-columns: 1fr; }
+      .col-3, .col-4, .col-5 { grid-template-columns: 1fr; }
+      #page-content [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <span class="logo">Argus</span>
+    <span class="logo" onclick="switchTab('overview', document.querySelectorAll('.tab')[0])">
+      <img src="/static/icon-sq.png" alt="" class="logo-icon logo-icon-light">
+      <img src="/static/icon-sq-dark.png" alt="" class="logo-icon logo-icon-dark">
+      {{ title }}
+    </span>
     <nav>
       <button class="tab active" onclick="switchTab('overview', this)">Overview</button>
-      <button class="tab" onclick="switchTab('vms', this)">Virtual Machines</button>
+      <button class="tab" onclick="switchTab('guests', this)">Guests</button>
       <button class="tab" onclick="switchTab('storage', this)">Storage</button>
       <button class="tab" onclick="switchTab('backups', this)">Backups</button>
-      <button class="tab" onclick="switchTab('network', this)">Network</button>
-      <button class="tab" onclick="switchTab('pihole', this)">Pi-hole</button>
-      <button class="tab" onclick="switchTab('settings', this)">Settings</button>
+      <button class="tab" onclick="switchTab('services', this)">Services</button>
+      <button class="tab" onclick="switchTab('tailscale', this)">Tailscale</button>
+      <button class="tab" onclick="switchTab('dns', this)">DNS</button>
     </nav>
-    <span class="updated" id="last-updated">—</span>
-    <a href="/logout" class="logout-btn">Sign out</a>
+    <div class="header-actions">
+      <span class="updated" id="last-updated">—</span>
+      <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle dark mode">☾</button>
+      <button class="icon-btn" onclick="openSettings()" title="Settings">⚙</button>
+      <a href="/logout" class="logout-btn">Sign out</a>
+    </div>
   </header>
 
   <div id="page-content">
     <p class="empty">Loading…</p>
   </div>
 
+  <nav class="bnav" id="bnav">
+    <button class="bnav-btn active" onclick="switchTab('overview', this, true)">
+      <svg class="bnav-icon" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
+      Overview
+    </button>
+    <button class="bnav-btn" onclick="switchTab('guests', this, true)">
+      <svg class="bnav-icon" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="3" width="16" height="5" rx="1.5"/><rect x="2" y="10" width="16" height="5" rx="1.5"/><circle cx="14.5" cy="5.5" r="1.2"/><circle cx="14.5" cy="12.5" r="1.2"/><rect x="4" y="16" width="5" height="1.5" rx="0.75"/><rect x="11" y="16" width="5" height="1.5" rx="0.75"/></svg>
+      Guests
+    </button>
+    <button class="bnav-btn" onclick="switchTab('storage', this, true)">
+      <svg class="bnav-icon" viewBox="0 0 20 20" fill="currentColor"><ellipse cx="10" cy="4.5" rx="7" ry="2.5"/><path d="M3 4.5v4c0 1.38 3.13 2.5 7 2.5s7-1.12 7-2.5v-4"/><path d="M3 8.5v4c0 1.38 3.13 2.5 7 2.5s7-1.12 7-2.5v-4"/><path d="M3 12.5v3c0 1.38 3.13 2.5 7 2.5s7-1.12 7-2.5v-3"/></svg>
+      Storage
+    </button>
+    <button class="bnav-btn" onclick="switchTab('backups', this, true)">
+      <svg class="bnav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 3v5l3.5 2-1 1.73L8.5 11.5V5H10z"/></svg>
+      Backups
+    </button>
+    <button class="bnav-btn" onclick="switchTab('services', this, true)">
+      <svg class="bnav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm-.75 4.5h1.5v5h-1.5V6.5zm0 6.5h1.5v1.5h-1.5V13z"/></svg>
+      Services
+    </button>
+    <button class="bnav-btn" onclick="switchTab('tailscale', this, true)">
+      <svg class="bnav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L3 5v5c0 4.1 3 7.93 7 9 4-1.07 7-4.9 7-9V5l-7-3z"/></svg>
+      Tailscale
+    </button>
+    <button class="bnav-btn" onclick="switchTab('dns', this, true)">
+      <svg class="bnav-icon" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><ellipse cx="10" cy="10" rx="3.5" ry="8" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="2" y1="10" x2="18" y2="10" stroke="currentColor" stroke-width="1.8"/><line x1="10" y1="2" x2="10" y2="18" stroke="currentColor" stroke-width="1.8"/></svg>
+      DNS
+    </button>
+  </nav>
+
   <script>
     let _refreshInterval = null;
     let _activePage = 'overview';
 
-    function switchTab(page, btn) {
+    // ── dark mode ──
+    function applyTheme(dark) {
+      document.documentElement.classList.toggle('dark', dark);
+      document.getElementById('theme-btn').textContent = dark ? '☀' : '☾';
+    }
+    (function() {
+      const saved = localStorage.getItem('argus-theme');
+      applyTheme(saved === 'dark');
+    })();
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const next   = !isDark;
+      localStorage.setItem('argus-theme', next ? 'dark' : 'light');
+      applyTheme(next);
+    }
+
+    // ── tab switching ──
+    function switchTab(page, btn, fromBnav) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
+      document.querySelectorAll('.bnav-btn').forEach(t => t.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      // keep the other nav in sync
+      const idx = ['overview','guests','storage','backups','services','tailscale','dns'].indexOf(page);
+      if (idx >= 0) {
+        if (fromBnav) document.querySelectorAll('.tab')[idx]?.classList.add('active');
+        else          document.querySelectorAll('.bnav-btn')[idx]?.classList.add('active');
+      }
       _activePage = page;
       loadPage(page);
       if (_refreshInterval) clearInterval(_refreshInterval);
@@ -282,13 +449,19 @@
 
     function loadPage(page) {
       htmx.ajax('GET', `/page/${page}`, {target: '#page-content', swap: 'innerHTML'});
-      // also refresh the timestamp
       fetch('/api/status').then(r => r.json()).then(d => {
         if (d.last_updated) document.getElementById('last-updated').textContent = d.last_updated;
       });
     }
 
-    // load default page on startup
+    function openSettings() {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.bnav-btn').forEach(t => t.classList.remove('active'));
+      if (_refreshInterval) clearInterval(_refreshInterval);
+      _activePage = 'settings';
+      loadPage('settings');
+    }
+
     loadPage('overview');
     _refreshInterval = setInterval(() => loadPage(_activePage), 15000);
   </script>

@@ -1,0 +1,91 @@
+<div class="card">
+  <div class="card-title">
+    Guests &mdash;
+    {{ vms|length }} VM{% if vms|length != 1 %}s{% endif %},
+    {{ lxc|length }} container{% if lxc|length != 1 %}s{% endif %}
+  </div>
+  {% set all_guests = (vms + lxc)|sort(attribute='name') %}
+  {% if all_guests %}
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>ID</th>
+        <th>Cores</th>
+        <th>RAM (alloc)</th>
+        <th>RAM (pressure)</th>
+        <th>CPU</th>
+        <th>Disk</th>
+        <th>Passthrough</th>
+        <th>Net today ↓/↑</th>
+        <th>Uptime</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for guest in all_guests %}
+      {% set cfg = vm_configs.get(guest.vmid, {}) if guest.type == 'vm' else lxc_configs.get(guest.vmid, {}) %}
+      {% set p   = vm_pressure.get(guest.vmid, {}) %}
+      {% set disks = cfg.get('disks', []) %}
+      {% set pt    = cfg.get('passthrough', []) %}
+      <tr>
+        <td style="width:18px"><span class="dot {{ 'dot-green' if guest.status == 'running' else 'dot-red' }}"></span></td>
+        <td style="font-weight:500">{{ guest.name }}</td>
+        <td><span class="badge {{ 'badge-lxc' if guest.type == 'lxc' else 'badge-vm' }}">{{ guest.type|upper }}</span></td>
+        <td style="color:var(--text-muted)">{{ guest.vmid }}</td>
+        <td>{{ cfg.get('cores', '—') }}</td>
+        <td style="color:var(--text-3)">
+          {% if guest.type == 'vm' %}{{ cfg.get('mem_gb', '—') }} GB
+          {% else %}{{ cfg.get('mem_gb', '—') }} GB{% endif %}
+        </td>
+        <td>
+          {% if p %}
+          <div class="mini-wrap">
+            <div class="mini-bg" {% if p.peak_pct is defined and p.peak_pct > p.pct %}title="24h peak: {{ p.peak_gb }}GB"{% endif %}>
+              <div class="mini-fill {{ p.bar_class }}" style="width:{{ p.pct }}%"></div>
+              {% if p.peak_pct is defined and p.peak_pct > p.pct %}<div class="peak-mark" style="left:{{ p.peak_pct }}%"></div>{% endif %}
+            </div>
+            <span class="mini-label">{{ p.used_gb }}GB</span>
+          </div>
+          {% else %}<span style="color:var(--text-3)">—</span>{% endif %}
+        </td>
+        <td>
+          <div class="mini-wrap">
+            <div class="mini-bg" {% if guest.cpu_peak_pct is defined and guest.cpu_peak_pct > guest.cpu_pct %}title="24h peak: {{ guest.cpu_peak_pct }}%"{% endif %}>
+              <div class="mini-fill {{ guest.cpu_class }}" style="width:{{ [guest.cpu_pct,100]|min }}%"></div>
+              {% if guest.cpu_peak_pct is defined and guest.cpu_peak_pct > guest.cpu_pct %}<div class="peak-mark" style="left:{{ [guest.cpu_peak_pct,100]|min }}%"></div>{% endif %}
+            </div>
+            <span class="mini-label">{{ guest.cpu_pct }}%</span>
+          </div>
+        </td>
+        <td>
+          {% if guest.type == 'vm' and disks %}
+            <span class="badge">{{ disks[0].pool }}</span>
+            <span style="font-size:0.75rem;color:var(--text-3)">{{ disks[0].size }}</span>
+            {% if disks|length > 1 %}
+              <br>{% for d in disks[1:] %}<span class="badge">{{ d.pool }}</span> {{ d.size }}{% if not loop.last %}, {% endif %}{% endfor %}
+            {% endif %}
+          {% elif guest.type == 'lxc' and cfg.get('disk_size') %}
+            <span style="font-size:0.75rem;color:var(--text-3)">{{ cfg.disk_size }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if pt %}
+            {% for p2 in pt %}
+            <span class="badge {{ 'badge-gpu' if p2.is_gpu else 'badge-pci' }}" title="{{ p2.pci_id }}">
+              {{ 'GPU' if p2.is_gpu else 'PCI' }} · {{ p2.name }}
+            </span>
+            {% endfor %}
+          {% else %}—{% endif %}
+        </td>
+        <td style="font-size:0.75rem;color:var(--text-3)">{{ guest.net_day_in }} / {{ guest.net_day_out }}</td>
+        <td style="color:var(--text-3)">{{ guest.uptime }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No guests found — check Proxmox connection in Settings.</p>
+  {% endif %}
+</div>

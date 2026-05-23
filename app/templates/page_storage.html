@@ -1,4 +1,4 @@
-<div class="grid col-2" style="align-items:start">
+<div class="grid col-2" style="align-items:start;margin-bottom:1rem">
 
   <div class="card">
     <div class="card-title">Storage Pools</div>
@@ -6,16 +6,14 @@
       {% for s in storage %}
       <div class="bar-row">
         <div class="bar-label">
-          <span class="bar-name">{{ s.name }}<span class="bar-type">{{ s.type }}</span></span>
+          <span class="bar-name">{{ s.name }}<span class="bar-type"> {{ s.type }}</span></span>
           <span class="bar-detail">{{ s.used_gb }} GB / {{ s.total_gb }} GB &nbsp; {{ s.pct }}%</span>
         </div>
-        <div class="bar-bg">
-          <div class="bar-fill {{ s.bar_class }}" style="width:{{ s.pct }}%"></div>
-        </div>
+        <div class="bar-bg"><div class="bar-fill {{ s.bar_class }}" style="width:{{ s.pct }}%"></div></div>
       </div>
       {% endfor %}
     {% else %}
-    <p class="empty">No data</p>
+    <p class="empty">No storage data — check Proxmox connection in Settings.</p>
     {% endif %}
   </div>
 
@@ -24,17 +22,12 @@
     {% if disks %}
     <table>
       <thead>
-        <tr>
-          <th>Device</th>
-          <th>Model</th>
-          <th>Size</th>
-          <th>Used as</th>
-        </tr>
+        <tr><th>Device</th><th>Model</th><th>Size</th><th>Used as</th></tr>
       </thead>
       <tbody>
         {% for d in disks %}
         <tr>
-          <td style="font-family:monospace;font-size:0.75rem;color:#4b5563">{{ d.dev }}</td>
+          <td style="font-family:monospace;font-size:0.75rem;color:var(--text-3)">{{ d.dev }}</td>
           <td style="font-size:0.75rem">{{ d.model }}</td>
           <td style="font-weight:500">{{ d.size }}</td>
           <td>
@@ -49,8 +42,41 @@
       </tbody>
     </table>
     {% else %}
-    <p class="empty">No data</p>
+    <p class="empty">No disk data.</p>
     {% endif %}
   </div>
 
 </div>
+
+{# ── Snapshots ── #}
+{% if vm_snapshots %}
+<div class="card">
+  <div class="card-title">VM Snapshots &mdash; {{ vm_snapshots|length }} VM{% if vm_snapshots|length != 1 %}s{% endif %} with snapshots</div>
+  <table>
+    <thead>
+      <tr><th>VM</th><th>ID</th><th>Snapshots</th><th>Oldest</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for vm in vms %}
+      {% set snap = vm_snapshots.get(vm.vmid) %}
+      {% if snap %}
+      <tr>
+        <td style="font-weight:500">{{ vm.name }}</td>
+        <td style="color:var(--text-muted)">{{ vm.vmid }}</td>
+        <td>{{ snap.count }}</td>
+        <td>
+          {% if snap.oldest_days == 0 %}<span class="chip chip-green">today</span>
+          {% elif snap.oldest_days < 7 %}<span class="chip chip-green">{{ snap.oldest_days }}d ago</span>
+          {% elif snap.oldest_days < 30 %}<span class="chip chip-amber">{{ snap.oldest_days }}d ago</span>
+          {% else %}<span class="chip chip-red">{{ snap.oldest_days }}d ago</span>{% endif %}
+        </td>
+        <td style="font-size:0.72rem;color:var(--text-muted)">
+          {% if snap.oldest_days > 30 %}Consider cleaning up{% endif %}
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

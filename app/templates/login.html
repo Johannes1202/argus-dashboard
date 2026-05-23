@@ -3,85 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Argus — Login</title>
+  <title>{{ title }} — Login</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
   <style>
+    :root {
+      --bg: #f0f2f5; --card: #ffffff; --text: #1a1a1a; --text-muted: #6b7280;
+      --border: #e5e7eb; --input-bg: #ffffff; --btn: #111111; --btn-hover: #333333;
+    }
+    html.dark {
+      --bg: #0f1117; --card: #1a1d27; --text: #e5e7eb; --text-muted: #6b7280;
+      --border: #2a2d3e; --input-bg: #232636; --btn: #e5e7eb; --btn-hover: #d1d5db;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f2f5;
-      color: #1a1a1a;
-      font-size: 14px;
-    }
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      padding: 2rem 2.25rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.04);
-      width: 100%;
-      max-width: 340px;
-    }
-    .logo {
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: #111;
-      margin-bottom: 1.75rem;
-    }
-    label {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 0.4rem;
-    }
-    input[type="password"] {
-      width: 100%;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    input[type="password"]:focus {
-      border-color: #111;
-    }
-    .error {
-      font-size: 0.75rem;
-      color: #b91c1c;
-      margin-top: 0.5rem;
-    }
-    button {
-      margin-top: 1.25rem;
-      width: 100%;
-      padding: 0.55rem;
-      background: #111;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    button:hover { background: #333; }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+    body { display: flex; align-items: center; justify-content: center; }
+    .card { background: var(--card); border-radius: 10px; padding: 2rem 2.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.04); width: 100%; max-width: 340px; }
+    .logo { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin-bottom: 1.75rem; }
+    label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; }
+    input[type="password"] { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; outline: none; background: var(--input-bg); color: var(--text); transition: border-color 0.15s; }
+    input[type="password"]:focus { border-color: var(--text-muted); }
+    .error { font-size: 0.75rem; color: #b91c1c; margin-top: 0.5rem; }
+    button { margin-top: 1.25rem; width: 100%; padding: 0.55rem; background: var(--btn); color: #fff; border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    html.dark button { color: #0f1117; }
+    button:hover { background: var(--btn-hover); }
   </style>
+  <script>
+    (function() {
+      if (localStorage.getItem('argus-theme') === 'dark')
+        document.documentElement.classList.add('dark');
+    })();
+  </script>
 </head>
 <body>
   <div class="card">
-    <div class="logo">Argus</div>
+    <div class="logo">{{ title }}</div>
     <form method="post" action="/login">
       <label for="password">Password</label>
       <input type="password" id="password" name="password" autofocus autocomplete="current-password">
-      {% if error %}
-        <div class="error">{{ error }}</div>
-      {% endif %}
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
       <button type="submit">Sign in</button>
     </form>
   </div>

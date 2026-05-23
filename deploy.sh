@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# Deploy argus-dashboard to CoreServices (192.168.0.102)
-# Run from Argus: ~/argus-dashboard/deploy.sh
+# Deploy Argus to a remote server.
+# Usage: REMOTE=user@your-server REMOTE_DIR=~/argus ./deploy.sh
 set -e
 
-REMOTE="johan@192.168.0.102"
-REMOTE_DIR="~/argus-dashboard"
+REMOTE="${REMOTE:?Set REMOTE=user@your-server}"
+REMOTE_DIR="${REMOTE_DIR:-~/argus}"
 
-echo "Syncing files..."
-rsync -av --exclude='.env' --exclude='__pycache__' --exclude='*.pyc' \
-  ~/argus-dashboard/ "$REMOTE:$REMOTE_DIR/"
+echo "Syncing files to $REMOTE:$REMOTE_DIR ..."
+rsync -av --exclude='.env' --exclude='config.yml' --exclude='data/' \
+  --exclude='__pycache__' --exclude='*.pyc' --exclude='.git/' \
+  ./ "$REMOTE:$REMOTE_DIR/"
 
-echo "Rebuilding and restarting container..."
-# Note: always use --build, not restart — code is baked into the image, not volume-mounted
-ssh "$REMOTE" "cd $REMOTE_DIR && sudo docker compose up -d --build"
+echo "Rebuilding and restarting..."
+# Always --build — code is baked into the image, not volume-mounted
+ssh "$REMOTE" "cd $REMOTE_DIR && docker compose up -d --build"
 
 echo "Done."

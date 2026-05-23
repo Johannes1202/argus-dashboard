@@ -1,17 +1,20 @@
 from typing import Any
 
 _state: dict[str, Any] = {
-    "vms": [],
-    "vm_configs": {},
-    "node": {},
-    "storage": [],
-    "disks": [],
-    "backups": [],
-    "tailscale": [],
-    "services": [],
-    "pihole": [],
-    "vm_pressure": {},
-    "vm_lan_ips":  {},
+    "vms":          [],
+    "lxc":          [],
+    "vm_configs":   {},
+    "lxc_configs":  {},
+    "vm_snapshots": {},   # vmid -> {count, oldest_days}
+    "node":         {},
+    "storage":      [],
+    "disks":        [],
+    "backups":      [],
+    "tailscale":    [],
+    "services":     [],
+    "pihole":       [],
+    "vm_pressure":  {},
+    "vm_lan_ips":   {},
     "last_updated": None,
 }
 

@@ -1,82 +1,193 @@
 <script>
+async function _post(url, body, msgId) {
+  const el = document.getElementById(msgId);
+  el.textContent = 'Saving…'; el.className = 'cfg-msg';
+  try {
+    const r = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    el.textContent = r.ok ? 'Saved.' : 'Error saving.';
+    el.className   = r.ok ? 'cfg-msg cfg-ok' : 'cfg-msg cfg-err';
+  } catch { el.textContent = 'Error.'; el.className = 'cfg-msg cfg-err'; }
+  setTimeout(() => { el.textContent = ''; el.className = 'cfg-msg'; }, 2500);
+}
+
 function addRow(tbodyId, cells) {
   const tbody = document.getElementById(tbodyId);
-  const tr = document.createElement('tr');
+  const tr    = document.createElement('tr');
   tr.innerHTML = cells + `<td><button class="del-btn" onclick="this.closest('tr').remove()">×</button></td>`;
   tbody.appendChild(tr);
   tr.querySelector('input').focus();
 }
 
+// ── Proxmox ──
+function saveProxmox() {
+  _post('/api/config/proxmox', {
+    api_url:      document.getElementById('px-api').value.trim(),
+    node:         document.getElementById('px-node').value.trim(),
+    token_id:     document.getElementById('px-token-id').value.trim(),
+    token_secret: document.getElementById('px-secret').value.trim(),
+  }, 'px-msg');
+}
+
+// ── PBS ──
+function savePBS() {
+  _post('/api/config/pbs', { storage: document.getElementById('pbs-storage').value.trim() }, 'pbs-msg');
+}
+
+// ── Tailscale ──
+function saveTailscale() {
+  _post('/api/config/tailscale', {
+    tailnet: document.getElementById('ts-tailnet').value.trim(),
+    api_key: document.getElementById('ts-key').value.trim(),
+  }, 'ts-msg');
+}
+
+// ── Pi-hole ──
+function addPihole() {
+  addRow('ph-body',
+    `<td><input class="cfg-input" placeholder="DNS"></td>
+     <td><input class="cfg-input" placeholder="http://192.168.1.1"></td>
+     <td><input class="cfg-input" type="password" placeholder="password"></td>`
+  );
+}
+function savePihole() {
+  const rows = document.querySelectorAll('#ph-body tr');
+  const instances = [...rows].map(tr => {
+    const [name, url, pw] = [...tr.querySelectorAll('input')].map(i => i.value.trim());
+    return { name, url, password: pw };
+  }).filter(i => i.name && i.url);
+  _post('/api/config/pihole', instances, 'ph-msg');
+}
+
+// ── Services ──
 function addService() {
   addRow('svc-body',
     `<td><input class="cfg-input" placeholder="Name"></td>
-     <td><input class="cfg-input" placeholder="http://192.168.0.x:port"></td>
+     <td><input class="cfg-input" placeholder="http://192.168.1.x:port"></td>
      <td><input class="cfg-input" placeholder="https://example.com (optional)"></td>`
   );
 }
-
-function addDevice() {
-  addRow('dev-body',
-    `<td><input class="cfg-input" placeholder="tailscale-hostname"></td>
-     <td><input class="cfg-input" placeholder="192.168.0.x"></td>`
-  );
-}
-
-async function saveServices() {
+function saveServices() {
   const rows = document.querySelectorAll('#svc-body tr');
   const services = [...rows].map(tr => {
     const [name, local, pub] = [...tr.querySelectorAll('input')].map(i => i.value.trim());
-    return { name, local: local || null, public: pub || null };
+    return { name, local: local||null, public: pub||null };
   }).filter(s => s.name);
-
-  await _post('/api/config/services', services, 'svc-msg');
+  _post('/api/config/services', services, 'svc-msg');
 }
 
-async function saveDevices() {
+// ── Devices ──
+function addDevice() {
+  addRow('dev-body',
+    `<td><input class="cfg-input" placeholder="tailscale-hostname"></td>
+     <td><input class="cfg-input" placeholder="192.168.1.x"></td>`
+  );
+}
+function saveDevices() {
   const rows = document.querySelectorAll('#dev-body tr');
   const devices = {};
   for (const tr of rows) {
     const [name, ip] = [...tr.querySelectorAll('input')].map(i => i.value.trim());
     if (name && ip) devices[name.toLowerCase()] = ip;
   }
-  await _post('/api/config/devices', devices, 'dev-msg');
-}
-
-async function _post(url, body, msgId) {
-  const el = document.getElementById(msgId);
-  el.textContent = 'Saving…';
-  el.className = 'cfg-msg';
-  try {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    el.textContent = r.ok ? 'Saved.' : 'Error saving.';
-    el.className = r.ok ? 'cfg-msg cfg-ok' : 'cfg-msg cfg-err';
-  } catch {
-    el.textContent = 'Error saving.';
-    el.className = 'cfg-msg cfg-err';
-  }
-  setTimeout(() => { el.textContent = ''; el.className = 'cfg-msg'; }, 2500);
+  _post('/api/config/devices', devices, 'dev-msg');
 }
 </script>
 
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+
+  {# ── Proxmox ── #}
+  <div class="card">
+    <div class="card-title">Proxmox</div>
+    <p class="cfg-note">Requires an API token with VM.Audit, Datastore.Audit, Sys.Audit privileges.</p>
+    <table>
+      <tbody>
+        <tr><td style="width:140px;color:var(--text-muted);font-size:0.8rem;padding-right:0.75rem;white-space:nowrap">API URL</td>
+            <td><input id="px-api" class="cfg-input" value="{{ px_api_url }}" placeholder="https://192.168.1.10:8006/api2/json"></td></tr>
+        <tr><td style="color:var(--text-muted);font-size:0.8rem">Node name</td>
+            <td><input id="px-node" class="cfg-input" value="{{ px_node }}" placeholder="pve"></td></tr>
+        <tr><td style="color:var(--text-muted);font-size:0.8rem">Token ID</td>
+            <td><input id="px-token-id" class="cfg-input" type="password" placeholder="argus@pve!monitoring">
+                {% if px_token_set %}<span class="cfg-set">✓ configured</span>{% endif %}</td></tr>
+        <tr><td style="color:var(--text-muted);font-size:0.8rem">Token secret</td>
+            <td><input id="px-secret" class="cfg-input" type="password" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                {% if px_secret_set %}<span class="cfg-set">✓ configured</span>{% endif %}</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem">
+      <button class="save-btn" onclick="saveProxmox()">Save</button>
+      <span id="px-msg" class="cfg-msg"></span>
+    </div>
+  </div>
+
+  {# ── Tailscale ── #}
+  <div class="card">
+    <div class="card-title">Tailscale</div>
+    <p class="cfg-note">Read-only API key from tailscale.com/admin/settings/keys.</p>
+    <table><tbody>
+      <tr><td style="width:140px;color:var(--text-muted);font-size:0.8rem;padding-right:0.75rem;white-space:nowrap">Tailnet</td>
+          <td><input id="ts-tailnet" class="cfg-input" value="{{ ts_tailnet }}" placeholder="-"></td></tr>
+      <tr><td style="color:var(--text-muted);font-size:0.8rem">API key</td>
+          <td><input id="ts-key" class="cfg-input" type="password" placeholder="tskey-api-…">
+              {% if ts_key_set %}<span class="cfg-set">✓ configured</span>{% endif %}</td></tr>
+    </tbody></table>
+    <div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem">
+      <button class="save-btn" onclick="saveTailscale()">Save</button>
+      <span id="ts-msg" class="cfg-msg"></span>
+    </div>
+  </div>
+
+  {# ── PBS ── #}
+  <div class="card">
+    <div class="card-title">Proxmox Backup Server</div>
+    <p class="cfg-note">Storage name as it appears in Proxmox (Datacenter → Storage).</p>
+    <table><tbody>
+      <tr><td style="width:140px;color:var(--text-muted);font-size:0.8rem;padding-right:0.75rem;white-space:nowrap">Storage name</td>
+          <td><input id="pbs-storage" class="cfg-input" value="{{ pbs_storage }}" placeholder="PBS-Server"></td></tr>
+    </tbody></table>
+    <div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem">
+      <button class="save-btn" onclick="savePBS()">Save</button>
+      <span id="pbs-msg" class="cfg-msg"></span>
+    </div>
+  </div>
+
+  {# ── Pi-hole (inline, spans both columns) ── #}
+  <div class="card" style="grid-column:1/-1">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+      <div class="card-title" style="margin-bottom:0">DNS / Pi-hole Instances</div>
+      <button class="add-btn" onclick="addPihole()">+ Add instance</button>
+    </div>
+    <p class="cfg-note">Requires Pi-hole v6. Add as many instances as you have.</p>
+    <table>
+      <thead><tr><th>Name</th><th>URL</th><th>Password</th><th></th></tr></thead>
+      <tbody id="ph-body">
+        {% for ph in pihole_instances %}
+        <tr>
+          <td><input class="cfg-input" value="{{ ph.name }}"></td>
+          <td><input class="cfg-input" value="{{ ph.url }}"></td>
+          <td><input class="cfg-input" type="password" placeholder="{% if ph.password_set %}(configured){% else %}password{% endif %}">
+              {% if ph.password_set %}<span class="cfg-set" style="display:block;font-size:0.68rem">✓</span>{% endif %}</td>
+          <td><button class="del-btn" onclick="this.closest('tr').remove()">×</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem">
+      <button class="save-btn" onclick="savePihole()">Save</button>
+      <span id="ph-msg" class="cfg-msg"></span>
+    </div>
+  </div>
+
+</div>
+
 {# ── Services ── #}
-<div class="card" style="margin-bottom:1rem">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+<div class="card" style="margin-top:1rem">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
     <div class="card-title" style="margin-bottom:0">Services</div>
     <button class="add-btn" onclick="addService()">+ Add</button>
   </div>
+  <p class="cfg-note">Local URL is used for health checks. Public URL is display-only and used for SSL cert expiry checks.</p>
   <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Local URL <span style="font-weight:400;text-transform:none;letter-spacing:0">(health check)</span></th>
-        <th>Public URL <span style="font-weight:400;text-transform:none;letter-spacing:0">(display only)</span></th>
-        <th></th>
-      </tr>
-    </thead>
+    <thead><tr><th>Name</th><th>Local URL</th><th>Public URL (optional)</th><th></th></tr></thead>
     <tbody id="svc-body">
       {% for svc in services_cfg %}
       <tr>
@@ -95,23 +206,14 @@ async function _post(url, body, msgId) {
 </div>
 
 {# ── Device LAN IPs ── #}
-<div class="card">
+<div class="card" style="margin-top:1rem">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
     <div class="card-title" style="margin-bottom:0">Device LAN IPs</div>
     <button class="add-btn" onclick="addDevice()">+ Add</button>
   </div>
-  <p style="font-size:0.75rem;color:#6b7280;margin-bottom:1rem">
-    VMs are discovered automatically via guest agent.
-    Add non-VM Tailscale devices (bare metal servers, PCs) here.
-  </p>
+  <p class="cfg-note">VMs are discovered automatically. Add bare-metal servers, PCs, or other non-VM Tailscale devices here. The hostname must match the Tailscale device name (lowercase).</p>
   <table>
-    <thead>
-      <tr>
-        <th>Tailscale hostname</th>
-        <th>LAN IP</th>
-        <th></th>
-      </tr>
-    </thead>
+    <thead><tr><th>Tailscale hostname</th><th>LAN IP</th><th></th></tr></thead>
     <tbody id="dev-body">
       {% for name, ip in device_lan_map.items() %}
       <tr>

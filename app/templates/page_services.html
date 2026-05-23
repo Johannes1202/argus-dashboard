@@ -1,0 +1,54 @@
+<div class="card">
+  <div class="card-title">
+    Services &mdash;
+    {% set up = services|selectattr('up')|list|length %}
+    {% set total = services|length %}
+    <span class="{{ 'ok' if up == total else 'overprov' }}" style="font-weight:700;font-size:0.75rem;letter-spacing:normal;text-transform:none">{{ up }} / {{ total }} up</span>
+  </div>
+  {% if services %}
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Service</th>
+        <th>Response</th>
+        <th>Local URL</th>
+        <th>Public URL</th>
+        <th>SSL expiry</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for svc in services %}
+      <tr>
+        <td style="width:18px"><span class="dot {{ 'dot-green' if svc.up else 'dot-red' }}"></span></td>
+        <td style="font-weight:500">{{ svc.name }}</td>
+        <td>
+          {% if svc.response_ms is not none %}
+            <span class="chip {% if svc.response_ms < 200 %}chip-green{% elif svc.response_ms < 1000 %}chip-amber{% else %}chip-red{% endif %}">
+              {{ svc.response_ms }}ms
+            </span>
+          {% elif not svc.up %}
+            <span class="chip chip-red">down</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if svc.local %}<a class="link" href="{{ svc.local }}" target="_blank">{{ svc.local }}</a>{% else %}—{% endif %}
+        </td>
+        <td>
+          {% if svc.public %}<a class="link" href="{{ svc.public }}" target="_blank">{{ svc.public }}</a>{% else %}—{% endif %}
+        </td>
+        <td>
+          {% if svc.ssl_days is not none %}
+            <span class="chip {% if svc.ssl_days > 30 %}chip-green{% elif svc.ssl_days > 7 %}chip-amber{% else %}chip-red{% endif %}">
+              {% if svc.ssl_days <= 0 %}expired{% else %}{{ svc.ssl_days }}d{% endif %}
+            </span>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No services configured — add them in Settings.</p>
+  {% endif %}
+</div>
